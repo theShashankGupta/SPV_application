@@ -3,8 +3,8 @@
 ### Setup Instructions
 
 1. **Clone the Repository:**
-   git clone git@github.com:theShashankGupta/SPV_application.git
-   cd SPV_application
+  * git clone git@github.com:theShashankGupta/SPV_application.git
+  * cd SPV_application
 
 2. npm install
 3. **Configure MongoDB:**
