@@ -1,35 +1,42 @@
 import fs from "fs";
 import { Equity } from "../module/equity.js";
+const unwrapValue = (value) => (Array.isArray(value) ? value[0] : value);
+
+
+const isValidNumber=(value)=> {
+  return !isNaN(parseFloat(value)) && isFinite(value);
+}
+
+
 
 export default async function readCsvToMongo(csvPath) {
   const data = fs.readFileSync(csvPath, 'utf-8');
   const lines = data.split('\n');
 
-  // Assuming the CSV file has a header and data starts from the second line
-  const headers = lines[0].split(',');
-
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(',');
+    const trimmedSCName = values[1] ? values[1].trim() : '';
+    const equityDocument = await Equity.findOneAndUpdate(
+      { SC_CODE: values[0], SC_NAME: trimmedSCName },
+      {},
+      { upsert: true, new: true }
+    );
 
-    // Create an object to store the equity data
-    const equityData = {};
+    const open = isValidNumber(values[4]) ? parseFloat(values[4]) : 0;
+    const high = isValidNumber(values[5]) ? parseFloat(values[5]) : 0;
+    const low = isValidNumber(values[6]) ? parseFloat(values[6]) : 0;
+    const close = isValidNumber(values[7]) ? parseFloat(values[7]) : 0;
 
-    headers.forEach((header, index) => {
-      equityData[header] = values[index];
-    });
+    
+    equityDocument.OPEN.push(unwrapValue(open));
+    equityDocument.HIGH.push(unwrapValue(high));
+    equityDocument.LOW.push(unwrapValue(low));
+    equityDocument.CLOSE.push(unwrapValue(close));
 
-    // Convert specific fields to appropriate types
-    equityData.OPEN = parseFloat(equityData.OPEN);
-    equityData.HIGH = parseFloat(equityData.HIGH);
-    equityData.LOW = parseFloat(equityData.LOW);
-    equityData.CLOSE = parseFloat(equityData.CLOSE);
-
-    // Save data to MongoDB using Mongoose
     try {
-      await Equity.create(equityData);
-      // console.log(``);
+      await equityDocument.save();
     } catch (error) {
-      console.error(`Error inserting record into MongoDB: ${error.message}`);
+      console.error(`Error updating document in MongoDB: ${error.message}`);
     }
   }
 
